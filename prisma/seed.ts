@@ -23,27 +23,32 @@ const run = async () => {
       })
     })
   )
-  const salt = await bcrypt.genSaltSync()
+
+  const salt = bcrypt.genSaltSync()
   const user = await prisma.user.upsert({
     where: { email: 'user@test.com' },
     update: {},
     create: {
       email: 'user@test.com',
-      password: await bcrypt.hash('password', salt),
+      password: bcrypt.hashSync('password', salt),
+      firstName: 'John',
+      lastName: 'Doe',
     },
   })
-  const songs = prisma.song.findMany({})
+
+  const songs = await prisma.song.findMany({})
   await Promise.all(
-    new Array(10).fill(0).map(async (_, index) => {
-      const song = songs[index]
-      await prisma.playlist.create({
+    new Array(10).fill(1).map(async (_, i) => {
+      return prisma.playlist.create({
         data: {
-          name: `Playlist ${index + 1}`,
+          name: `Playlist #${i + 1}`,
           user: {
             connect: { id: user.id },
           },
           songs: {
-            connect: { id: song.id },
+            connect: songs.map((song) => ({
+              id: song.id,
+            })),
           },
         },
       })
